@@ -63,7 +63,6 @@ static void usage()
     fprintf(stderr, "  -k <keepalive> keep alive in seconds for this client. Defaults to %d.\n", keep_alive);
     fprintf(stderr, "  -p <port>      Network port to connect to. Defaults to %s.\n", mqtt_sn_port);
     fprintf(stderr, "  -t <topic>     MQTT topic name to subscribe to.\n");
-    fprintf(stderr, "  -T <topicid>   Pre-defined MQTT-SN topic ID to subscribe to.\n");
     fprintf(stderr, "  --fe           Enables Forwarder Encapsulation. Mqtt-sn packets are encapsulated according to MQTT-SN Protocol Specification v1.2, chapter 5.5 Forwarder Encapsulation.\n");
     fprintf(stderr, "  --wlnid        If Forwarder Encapsulation is enabled, wireless node ID for this client. Defaults to process id.\n");
     fprintf(stderr, "  -v             Print messages verbosely, showing the topic name.\n");
@@ -86,7 +85,7 @@ static void parse_opts(int argc, char** argv)
     int option_index = 0;
 
     // Parse the options/switches
-    while ((ch = getopt_long(argc, argv, "1cdh:i:k:p:t:T:vV?", long_options, &option_index)) != -1)
+    while ((ch = getopt_long(argc, argv, "1cdh:i:k:p:t:vV?", long_options, &option_index)) != -1)
         switch (ch) {
         case '1':
             single_message = TRUE;
@@ -120,10 +119,6 @@ static void parse_opts(int argc, char** argv)
             topic_name = optarg;
             break;
 
-        case 'T':
-            topic_id = atoi(optarg);
-            break;
-
         case 'f':
             mqtt_sn_enable_frwdencap();
             break;
@@ -148,14 +143,8 @@ static void parse_opts(int argc, char** argv)
         }
 
     // Missing Parameter?
-    if (!topic_name && !topic_id) {
+    if (!topic_name) {
         usage();
-    }
-
-    // Both topic name and topic id?
-    if (topic_name && topic_id) {
-        log_err("Please provide either a topic id or a topic name, not both.");
-        exit(EXIT_FAILURE);
     }
 }
 

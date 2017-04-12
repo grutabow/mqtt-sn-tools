@@ -62,7 +62,6 @@ static void usage()
     fprintf(stderr, "  -q <qos>       Quality of Service value (0 or -1). Defaults to %d.\n", qos);
     fprintf(stderr, "  -r             Message should be retained.\n");
     fprintf(stderr, "  -t <topic>     MQTT topic name to publish to.\n");
-    fprintf(stderr, "  -T <topicid>   Pre-defined MQTT-SN topic ID to publish to.\n");
     fprintf(stderr, "  --fe           Enables Forwarder Encapsulation. Mqtt-sn packets are encapsulated according to MQTT-SN Protocol Specification v1.2, chapter 5.5 Forwarder Encapsulation.\n");
     fprintf(stderr, "  --wlnid        If Forwarder Encapsulation is enabled, wireless node ID for this client. Defaults to process id.\n");
     exit(EXIT_FAILURE);
@@ -83,7 +82,7 @@ static void parse_opts(int argc, char** argv)
     int option_index = 0;
 
     // Parse the options/switches
-    while ((ch = getopt_long (argc, argv, "dh:i:m:np:q:rt:T:?", long_options, &option_index)) != -1)
+    while ((ch = getopt_long (argc, argv, "dh:i:m:np:q:rt:?", long_options, &option_index)) != -1)
     {
         switch (ch) {
         case 'd':
@@ -122,10 +121,6 @@ static void parse_opts(int argc, char** argv)
             topic_name = optarg;
             break;
 
-        case 'T':
-            topic_id = atoi(optarg);
-            break;
-
         case 'f':
             mqtt_sn_enable_frwdencap();
             break;
@@ -142,18 +137,12 @@ static void parse_opts(int argc, char** argv)
     } // while
 
     // Missing Parameter?
-    if (!(topic_name || topic_id) || !message_data) {
+    if (!topic_name || !message_data) {
         usage();
     }
 
     if (qos != -1 && qos != 0) {
         log_err("Only QoS level 0 or -1 is supported.");
-        exit(EXIT_FAILURE);
-    }
-
-    // Both topic name and topic id?
-    if (topic_name && topic_id) {
-        log_err("Please provide either a topic id or a topic name, not both.");
         exit(EXIT_FAILURE);
     }
 
@@ -186,10 +175,7 @@ int main(int argc, char* argv[])
             mqtt_sn_receive_connack(sock);
         }
 
-        if (topic_id) {
-            // Use pre-defined topic ID
-            topic_id_type = MQTT_SN_TOPIC_TYPE_PREDEFINED;
-        } else if (strlen(topic_name) == 2) {
+        if (strlen(topic_name) == 2) {
             // Convert the 2 character topic name into a 2 byte topic id
             topic_id = (topic_name[0] << 8) + topic_name[1];
             topic_id_type = MQTT_SN_TOPIC_TYPE_SHORT;
@@ -197,7 +183,7 @@ int main(int argc, char* argv[])
             // Register the topic name
             mqtt_sn_send_register(sock, topic_name);
             topic_id = mqtt_sn_receive_regack(sock);
-            topic_id_type = MQTT_SN_TOPIC_TYPE_NORMAL;
+            topic_id_type = MQTT_SN_TOPIC_TYPE_PREDEFINED;
         }
 
         // Publish to the topic
